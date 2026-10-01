@@ -45,17 +45,23 @@ main {
   position: relative !important;
 }
 
+main {
+  display: flow-root;
+  --hero-height: clamp(600px, 82svh, 1120px);
+  --hero-offset: max(16px, calc((100svh - var(--hero-height)) / 2));
+}
+
 .topbar {
   background: transparent !important;
   height: 76px !important;
   left: 50% !important;
   margin: 0 !important;
-  max-width: 1440px !important;
+  max-width: none !important;
   padding: 0 48px !important;
   position: absolute !important;
-  top: 28px !important;
+  top: calc(var(--hero-offset) + 12px) !important;
   transform: translateX(-50%) !important;
-  width: min(1440px, calc(100% - 48px)) !important;
+  width: calc(100% - 48px) !important;
   z-index: 10 !important;
 }
 
@@ -100,15 +106,15 @@ main {
 
 .hero {
   background: #050505 url('/images/azzu-hero-background.jpg') center / cover no-repeat !important;
-  border-radius: 38px !important;
+  border-radius: 38px;
   color: #F8FAF5 !important;
   display: block !important;
-  height: min(700px, calc(100svh - 32px)) !important;
-  margin: max(16px, calc((100svh - 700px) / 2)) auto 0 !important;
+  height: var(--hero-height) !important;
+  margin: var(--hero-offset) auto 0 !important;
   min-height: 0 !important;
   padding: 116px 48px 20px !important;
   position: relative !important;
-  width: min(1440px, calc(100% - 48px)) !important;
+  width: calc(100% - 48px) !important;
 }
 
 .hero .eyebrow {
@@ -143,9 +149,9 @@ main {
 }
 
 .hero-art {
-  height: 310px !important;
+  height: clamp(310px, 40svh, 570px) !important;
   margin: 18px auto 0 !important;
-  max-width: 930px !important;
+  max-width: clamp(930px, 65vw, 1450px) !important;
   min-height: 0 !important;
   width: 100% !important;
 }
@@ -159,14 +165,14 @@ main {
   height: auto !important;
   right: 8% !important;
   top: 2px !important;
-  width: 430px !important;
+  width: clamp(430px, 30vw, 670px) !important;
 }
 
 .hero-art .front-card {
   height: auto !important;
   left: 2% !important;
-  top: 77px !important;
-  width: 505px !important;
+  top: clamp(77px, 6vw, 135px) !important;
+  width: clamp(505px, 35vw, 780px) !important;
 }
 
 @media (max-width: 900px) {
@@ -176,11 +182,13 @@ main {
     padding: 0 28px !important;
     transform: none !important;
     width: 100% !important;
+    top: 12px !important;
   }
 
   .hero {
     border-radius: 0 0 30px 30px !important;
     margin-top: 0 !important;
+    height: auto !important;
     min-height: min(600px, calc(100svh - 10px)) !important;
     padding: 118px 28px 26px !important;
     width: 100% !important;

@@ -143,7 +143,6 @@ export class PublicSiteComponent implements AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    this.initLowerSections();
     const canvas = this.heroArt?.nativeElement;
     if (!canvas) return;
     const hero = canvas.closest<HTMLElement>('.hero');
@@ -151,14 +150,15 @@ export class PublicSiteComponent implements AfterViewInit, OnDestroy {
     const topbar = document.querySelector<HTMLElement>('.topbar');
     if (!hero || !heroCopy || !topbar) return;
     const heading = heroCopy.querySelector<HTMLElement>('h1');
-    const headingLetters = heading ? this.splitHeadingIntoLetters(heading) : [];
+    const headingLetters = heading ? [heading] : [];
     const copyDetails = heroCopy.querySelectorAll<HTMLElement>('.eyebrow, .lede');
 
     this.zone.runOutsideAngular(() => {
       const backCard = canvas.querySelector<HTMLElement>('.back-motion');
       const frontCard = canvas.querySelector<HTMLElement>('.front-motion');
       const balance = canvas.querySelector<HTMLElement>('.balance-motion');
-      if (!backCard || !frontCard || !balance) return;
+      if (!backCard || !frontCard) return;
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
       const backBounds = backCard.firstElementChild?.getBoundingClientRect();
       const frontBounds = frontCard.firstElementChild?.getBoundingClientRect();
@@ -184,15 +184,15 @@ export class PublicSiteComponent implements AfterViewInit, OnDestroy {
       gsap.set(headingLetters, { autoAlpha: 0, y: 72 });
       gsap.set(backCard, { x: backTravel, y: 22, rotation: -7, autoAlpha: 0, force3D: false });
       gsap.set(frontCard, { x: frontTravel, y: -18, rotation: 7, autoAlpha: 0, force3D: false });
-      gsap.set(balance, { y: 34, autoAlpha: 0, force3D: false });
+      if (balance) gsap.set(balance, { y: 34, autoAlpha: 0, force3D: false });
 
       this.firstAnimationFrame = window.requestAnimationFrame(() => {
         this.secondAnimationFrame = window.requestAnimationFrame(() => {
           this.cardTimeline = gsap.timeline({ paused: true })
             .to(backCard, { x: 0, y: 0, rotation: 0, duration: 1.16, ease: 'power3.out', force3D: false }, 0)
             .to(frontCard, { x: 0, y: 0, rotation: 0, duration: 1.24, ease: 'power3.out', force3D: false }, .08)
-            .to([backCard, frontCard], { autoAlpha: 1, duration: .58, ease: 'sine.out' }, 0)
-            .to(balance, { y: 0, autoAlpha: 1, duration: .7, ease: 'power2.out', force3D: false }, .68);
+            .to([backCard, frontCard], { autoAlpha: 1, duration: .58, ease: 'sine.out' }, 0);
+          if (balance) this.cardTimeline.to(balance, { y: 0, autoAlpha: 1, duration: .7, ease: 'power2.out', force3D: false }, .68);
 
           this.heroRevealTimeline = gsap.timeline()
             // The black stage opens full-screen first, then pulls back centrally to its contained frame.
@@ -206,6 +206,8 @@ export class PublicSiteComponent implements AfterViewInit, OnDestroy {
         });
       });
     });
+    // Lower-section reveals must not prevent the independent hero entrance.
+    this.initLowerSections();
   }
 
   ngOnDestroy(): void {
@@ -222,7 +224,7 @@ export class PublicSiteComponent implements AfterViewInit, OnDestroy {
 
   updateCardTilt(event: PointerEvent): void {
     const canvas = this.heroArt?.nativeElement;
-    if (!canvas || event.pointerType === 'touch') return;
+    if (!canvas || event.pointerType === 'touch' || this.reducedMotion) return;
     canvas.classList.remove('is-settling');
     this.cardInertia?.kill();
 
@@ -367,7 +369,7 @@ export class PublicSiteComponent implements AfterViewInit, OnDestroy {
 
     const revealIn = (root: Element | null, targets: string, vars: gsap.TweenVars = {}): void => {
       if (!root) return;
-      reveal(root.querySelectorAll(targets), root, vars);
+      reveal(root.querySelectorAll(targets.startsWith('>') ? `:scope ${targets}` : targets), root, vars);
     };
 
     const section = (selector: string): HTMLElement | null => document.querySelector<HTMLElement>(selector);
