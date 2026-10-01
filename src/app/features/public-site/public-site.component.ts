@@ -158,7 +158,6 @@ export class PublicSiteComponent implements AfterViewInit, OnDestroy {
       const frontCard = canvas.querySelector<HTMLElement>('.front-motion');
       const balance = canvas.querySelector<HTMLElement>('.balance-motion');
       if (!backCard || !frontCard) return;
-      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
       const backBounds = backCard.firstElementChild?.getBoundingClientRect();
       const frontBounds = frontCard.firstElementChild?.getBoundingClientRect();
@@ -224,7 +223,7 @@ export class PublicSiteComponent implements AfterViewInit, OnDestroy {
 
   updateCardTilt(event: PointerEvent): void {
     const canvas = this.heroArt?.nativeElement;
-    if (!canvas || event.pointerType === 'touch' || this.reducedMotion) return;
+    if (!canvas || event.pointerType === 'touch') return;
     canvas.classList.remove('is-settling');
     this.cardInertia?.kill();
 

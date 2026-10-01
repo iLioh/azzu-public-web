@@ -47,7 +47,7 @@ main {
 
 main {
   display: flow-root;
-  --hero-height: clamp(600px, 82svh, 1120px);
+  --hero-height: min(700px, calc(100svh - 32px));
   --hero-offset: max(16px, calc((100svh - var(--hero-height)) / 2));
 }
 
@@ -56,12 +56,12 @@ main {
   height: 76px !important;
   left: 50% !important;
   margin: 0 !important;
-  max-width: none !important;
+  max-width: 1440px !important;
   padding: 0 48px !important;
   position: absolute !important;
   top: calc(var(--hero-offset) + 12px) !important;
   transform: translateX(-50%) !important;
-  width: calc(100% - 48px) !important;
+  width: min(1440px, calc(100% - 48px)) !important;
   z-index: 10 !important;
 }
 
@@ -114,7 +114,7 @@ main {
   min-height: 0 !important;
   padding: 116px 48px 20px !important;
   position: relative !important;
-  width: calc(100% - 48px) !important;
+  width: min(1440px, calc(100% - 48px)) !important;
 }
 
 .hero .eyebrow {
@@ -149,9 +149,9 @@ main {
 }
 
 .hero-art {
-  height: clamp(310px, 40svh, 570px) !important;
+  height: 310px !important;
   margin: 18px auto 0 !important;
-  max-width: clamp(930px, 65vw, 1450px) !important;
+  max-width: 930px !important;
   min-height: 0 !important;
   width: 100% !important;
 }
@@ -165,14 +165,14 @@ main {
   height: auto !important;
   right: 8% !important;
   top: 2px !important;
-  width: clamp(430px, 30vw, 670px) !important;
+  width: 430px !important;
 }
 
 .hero-art .front-card {
   height: auto !important;
   left: 2% !important;
-  top: clamp(77px, 6vw, 135px) !important;
-  width: clamp(505px, 35vw, 780px) !important;
+  top: 77px !important;
+  width: 505px !important;
 }
 
 @media (max-width: 900px) {
