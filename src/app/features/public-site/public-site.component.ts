@@ -1,36 +1,10 @@
 import { AfterViewInit, Component, ElementRef, NgZone, OnDestroy, ViewChild, inject, signal } from '@angular/core';
 import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-
-type CarouselVisual = 'balance' | 'movements' | 'transfer' | 'goals';
-
-interface CarouselRow {
-  readonly title: string;
-  readonly date: string;
-  readonly amount: string;
-  readonly out?: boolean;
-}
-
-interface CarouselBar {
-  readonly label: string;
-  readonly value: number;
-}
-
-interface CarouselSlide {
-  readonly id: string;
-  readonly visual: CarouselVisual;
-  readonly kicker: string;
-  readonly title: string;
-  readonly body: string;
-  readonly points: readonly string[];
-  readonly metric: string;
-  readonly metricLabel: string;
-  readonly rows?: readonly CarouselRow[];
-  readonly bars?: readonly CarouselBar[];
-}
+import { LandingContentComponent } from './landing-content.component';
 
 @Component({
   selector: 'app-public-site',
+  imports: [LandingContentComponent],
   templateUrl: './public-site.component.html',
   styleUrl: './public-site.component.scss',
 })
@@ -46,101 +20,12 @@ export class PublicSiteComponent implements AfterViewInit, OnDestroy {
   private lastPointerTime = 0;
   @ViewChild('heroArt') private heroArt?: ElementRef<HTMLElement>;
   readonly menuOpen = signal(false);
-  readonly faqOpen = signal<number | null>(null);
   readonly frontCardTransform = signal('perspective(1100px) rotateX(25deg) rotateY(0deg) rotateZ(8deg)');
   readonly backCardTransform = signal('perspective(1100px) rotateX(0deg) rotateY(0deg) rotateZ(-7deg)');
   readonly cardGlare = signal('radial-gradient(ellipse 112% 150% at 50% 50%, rgba(255, 255, 255, .07) 0%, transparent 70%)');
 
-  readonly slides: readonly CarouselSlide[] = [
-    {
-      id: 'saldo',
-      visual: 'balance',
-      kicker: 'Control',
-      title: 'Tu saldo, siempre a la vista.',
-      body: 'El disponible aparece primero, sin menús ni búsquedas. Sabes cuánto tienes y en qué cuentas antes de mover un solo sol.',
-      points: ['Disponible y saldos por cuenta', 'Se actualiza al entrar', 'Sin cifras redundantes'],
-      metric: 'S/ 19,390.50',
-      metricLabel: 'Saldo disponible',
-    },
-    {
-      id: 'movimientos',
-      visual: 'movements',
-      kicker: 'Claridad',
-      title: 'Movimientos sin ruido.',
-      body: 'Ingresos y salidas ordenados con el detalle justo para decidir, sin extractos que tengas que interpretar.',
-      points: ['Ordenados por fecha', 'Categorías claras', 'Detalle en un clic'],
-      metric: '24',
-      metricLabel: 'Movimientos este mes',
-      rows: [
-        { title: 'Transferencia recibida', date: 'Hoy, 09:14', amount: '+ S/ 450.00' },
-        { title: 'Pago de servicio', date: 'Ayer, 18:02', amount: '− S/ 89.90', out: true },
-        { title: 'Compra con tarjeta', date: '12 sep, 20:15', amount: '− S/ 64.20', out: true },
-        { title: 'Devolución', date: '10 sep, 08:00', amount: '+ S/ 128.00' },
-      ],
-    },
-    {
-      id: 'transferencia',
-      visual: 'transfer',
-      kicker: 'Velocidad',
-      title: 'Transferencias en segundos.',
-      body: 'Elige, revisa y confirma. El flujo está pensado para que mover tu dinero no se sienta como un trámite.',
-      points: ['Destinatarios frecuentes', 'Revisión antes de enviar', 'Confirmación inmediata'],
-      metric: '3',
-      metricLabel: 'Pasos para transferir',
-    },
-    {
-      id: 'metas',
-      visual: 'goals',
-      kicker: 'Proyección',
-      title: 'Tus metas, en camino.',
-      body: 'Un espacio para ver tus proyectos avanzando, sin pedirte que hagas las cuentas a mano cada mes.',
-      points: ['Progreso visible de golpe', 'Aportes a tu ritmo', 'Sin cálculos manuales'],
-      metric: '68%',
-      metricLabel: 'Meta de emergencia',
-      bars: [
-        { label: 'Fondo de emergencia', value: 68 },
-        { label: 'Viaje', value: 42 },
-        { label: 'Equipo nuevo', value: 25 },
-      ],
-    },
-  ];
-
-  readonly activeSlide = signal(0);
-
-  @ViewChild('carouselProgress') private carouselProgressBar?: ElementRef<HTMLElement>;
-  private readonly scrollTriggers: ScrollTrigger[] = [];
-  private progressTween?: gsap.core.Tween;
-  private carouselPaused = false;
-  private reducedMotion = false;
-  private readonly autoplayMs = 6800;
-  private readonly onVisibilityChange = (): void => {
-    if (document.hidden) this.pauseCarousel();
-    else this.resumeCarousel();
-  };
-
   toggleMenu(): void { this.menuOpen.update((open) => !open); }
   closeMenu(): void { this.menuOpen.set(false); }
-
-  toggleFaq(index: number): void {
-    const previouslyOpen = this.faqOpen();
-    const isClosing = previouslyOpen === index;
-    this.faqOpen.set(isClosing ? null : index);
-    if (this.reducedMotion) return;
-    if (previouslyOpen !== null && previouslyOpen !== index) this.animateFaqAnswer(previouslyOpen, false);
-    this.animateFaqAnswer(index, !isClosing);
-  }
-
-  nextSlide(): void { this.advanceSlide(); this.restartAutoplay(); }
-  prevSlide(): void { this.activeSlide.update((i) => (i - 1 + this.slides.length) % this.slides.length); this.restartAutoplay(); }
-  goToSlide(index: number): void { this.activeSlide.set(index); this.restartAutoplay(); }
-  pauseCarousel(): void { this.carouselPaused = true; this.progressTween?.pause(); }
-  resumeCarousel(): void {
-    if (!this.carouselPaused) return;
-    this.carouselPaused = false;
-    if (!this.autoplayEnabled) return;
-    if (this.progressTween?.isActive()) { this.progressTween.resume(); return; }
-    this.startAutoplay();
-  }
 
   ngAfterViewInit(): void {
     const canvas = this.heroArt?.nativeElement;
@@ -205,17 +90,11 @@ export class PublicSiteComponent implements AfterViewInit, OnDestroy {
         });
       });
     });
-    // Lower-section reveals must not prevent the independent hero entrance.
-    this.initLowerSections();
   }
 
   ngOnDestroy(): void {
     if (this.firstAnimationFrame !== undefined) window.cancelAnimationFrame(this.firstAnimationFrame);
     if (this.secondAnimationFrame !== undefined) window.cancelAnimationFrame(this.secondAnimationFrame);
-    document.removeEventListener('visibilitychange', this.onVisibilityChange);
-    this.progressTween?.kill();
-    for (const trigger of this.scrollTriggers) trigger.kill();
-    this.scrollTriggers.length = 0;
     this.cardTimeline?.kill();
     this.cardInertia?.kill();
     this.heroRevealTimeline?.kill();
@@ -295,153 +174,6 @@ export class PublicSiteComponent implements AfterViewInit, OnDestroy {
     this.frontCardTransform.set(`perspective(1100px) translate3d(${dragX.toFixed(2)}px, ${dragY.toFixed(2)}px, 0) rotateX(${(25 + tiltX).toFixed(2)}deg) rotateY(${tiltY.toFixed(2)}deg) rotateZ(${(8 + roll).toFixed(2)}deg)`);
     this.backCardTransform.set(`perspective(1100px) translate3d(${(dragX * .42).toFixed(2)}px, ${(dragY * .42).toFixed(2)}px, 0) rotateX(${(tiltX * .55).toFixed(2)}deg) rotateY(${(tiltY * .55).toFixed(2)}deg) rotateZ(${(-7 + roll * .55).toFixed(2)}deg)`);
     this.cardGlare.set(`radial-gradient(ellipse 158% 210% at ${glareX.toFixed(2)}% ${glareY.toFixed(2)}%, rgba(255, 255, 255, .17) 0%, rgba(255, 255, 255, .05) 42%, transparent 78%), linear-gradient(${(125 + (glareX - 50) * .2).toFixed(1)}deg, transparent 28%, rgba(255, 255, 255, .03) 50%, transparent 72%)`);
-  }
-
-  private initLowerSections(): void {
-    this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    this.initScrollReveals();
-    if (!this.reducedMotion) {
-      document.addEventListener('visibilitychange', this.onVisibilityChange);
-      this.startAutoplay();
-    }
-  }
-
-  private get autoplayEnabled(): boolean {
-    return !this.reducedMotion && !this.carouselPaused && this.slides.length > 1;
-  }
-
-  private advanceSlide(): void {
-    this.activeSlide.update((i) => (i + 1) % this.slides.length);
-  }
-
-  // The progress bar drives the rotation, so pausing it pauses the carousel with no drift.
-  private startAutoplay(): void {
-    if (!this.autoplayEnabled) return;
-    const bar = this.carouselProgressBar?.nativeElement;
-    if (!bar) return;
-    gsap.set(bar, { scaleX: 0, transformOrigin: 'left center' });
-    this.progressTween = gsap.to(bar, {
-      scaleX: 1,
-      duration: this.autoplayMs / 1000,
-      ease: 'none',
-      onComplete: () => {
-        this.advanceSlide();
-        this.startAutoplay();
-      },
-    });
-  }
-
-  private restartAutoplay(): void {
-    this.progressTween?.kill();
-    this.progressTween = undefined;
-    this.startAutoplay();
-  }
-
-  private animateFaqAnswer(index: number, open: boolean): void {
-    const answer = document.getElementById(`faq-answer-${index}`);
-    if (!answer) return;
-    gsap.killTweensOf(answer);
-    if (open) {
-      gsap.fromTo(answer, { height: 0, opacity: 0 }, { height: 'auto', opacity: 1, duration: .5, ease: 'power3.out' });
-    } else {
-      gsap.to(answer, { height: 0, opacity: 0, duration: .38, ease: 'power2.inOut' });
-    }
-  }
-
-  private initScrollReveals(): void {
-    if (this.reducedMotion) return;
-    gsap.registerPlugin(ScrollTrigger);
-
-    const reveal = (target: gsap.TweenTarget | null, trigger: Element, vars: gsap.TweenVars = {}): void => {
-      if (!target) return;
-      const tween = gsap.from(target, {
-        autoAlpha: 0,
-        y: 28,
-        duration: .8,
-        ease: 'power3.out',
-        stagger: .085,
-        scrollTrigger: { trigger, start: 'top 84%', once: true },
-        ...vars,
-      });
-      if (tween.scrollTrigger) this.scrollTriggers.push(tween.scrollTrigger);
-    };
-
-    const revealIn = (root: Element | null, targets: string, vars: gsap.TweenVars = {}): void => {
-      if (!root) return;
-      reveal(root.querySelectorAll(targets.startsWith('>') ? `:scope ${targets}` : targets), root, vars);
-    };
-
-    const section = (selector: string): HTMLElement | null => document.querySelector<HTMLElement>(selector);
-    const child = (root: Element | null, selector: string): HTMLElement | null => root?.querySelector<HTMLElement>(selector) ?? null;
-
-    const showcase = section('.showcase');
-    revealIn(showcase, '.showcase-copy > :not(.showcase-steps), .text-link');
-    const phoneScene = child(showcase, '.phone-scene');
-    if (phoneScene) reveal(phoneScene, phoneScene, { y: 46, scale: .965, duration: 1, stagger: 0 });
-    revealIn(child(showcase, '.showcase-steps'), 'li', { y: 16, duration: .6, stagger: .07 });
-
-    const carousel = section('.carousel');
-    revealIn(child(carousel, '.carousel-head'), '.carousel-heading > *, .carousel-nav', { y: 20 });
-    revealIn(child(carousel, '.carousel-body'), '.carousel-copy, .carousel-stage', { y: 40, duration: .95, stagger: .1 });
-    revealIn(child(carousel, '.carousel-foot'), '.carousel-dots, .carousel-track', { y: 14, duration: .6, stagger: .08 });
-
-    const products = section('.products');
-    revealIn(child(products, '.section-intro'), '> *');
-    revealIn(child(products, '.product-grid'), 'article', { y: 40, stagger: .1 });
-
-    const security = section('.security');
-    revealIn(child(security, '.security-main'), '.security-main > div', { y: 24, stagger: .1 });
-    revealIn(child(security, '.security-list'), 'li', { y: 28, stagger: .09 });
-
-    const help = section('.help');
-    revealIn(child(help, '.help-copy'), '> *');
-    revealIn(child(help, '.faq-list'), 'article', { y: 22, stagger: .08 });
-
-    const ready = section('.ready');
-    revealIn(ready, '.eyebrow, h2, .light', { y: 24, stagger: .1 });
-  }
-
-  private splitHeadingIntoLetters(heading: HTMLElement): HTMLElement[] {
-    if (heading.dataset['animatedLetters'] === 'true') {
-      return Array.from(heading.querySelectorAll<HTMLElement>('.hero-letter'));
-    }
-
-    heading.setAttribute('aria-label', heading.textContent?.trim() ?? '');
-    const textNodes: Text[] = [];
-    const walker = document.createTreeWalker(heading, NodeFilter.SHOW_TEXT);
-    let node: Node | null;
-    while ((node = walker.nextNode())) textNodes.push(node as Text);
-
-    const letters: HTMLElement[] = [];
-    for (const textNode of textNodes) {
-      const fragment = document.createDocumentFragment();
-      // Cada palabra va en un contenedor nowrap: los letters son inline-block, asi que
-      // sin esto el navegador parte palabras a mitad de linea. Los espacios quedan sueltos
-      // para que la palabra que no cabe baje entera en vez de romperse.
-      for (const chunk of (textNode.textContent ?? '').split(/(\s+)/)) {
-        if (!chunk) continue;
-        if (!chunk.trim()) {
-          fragment.append(document.createTextNode(' '));
-          continue;
-        }
-        const word = document.createElement('span');
-        word.className = 'hero-word';
-        word.setAttribute('aria-hidden', 'true');
-        for (const character of chunk) {
-          const letter = document.createElement('span');
-          letter.className = 'hero-letter';
-          letter.setAttribute('aria-hidden', 'true');
-          letter.textContent = character;
-          word.append(letter);
-          letters.push(letter);
-        }
-        fragment.append(word);
-      }
-      textNode.replaceWith(fragment);
-    }
-
-    heading.dataset['animatedLetters'] = 'true';
-    return letters;
   }
 
 }
