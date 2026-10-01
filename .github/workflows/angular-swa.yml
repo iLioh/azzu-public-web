@@ -1,0 +1,98 @@
+name: Angular CI and SWA DEV
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  ci:
+    name: Validate Angular
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.15.0'
+          cache: npm
+      - run: npm ci --no-fund --no-audit
+      - name: Dependency audit (runtime)
+        run: npm audit --omit=dev --audit-level=high
+      - name: Typecheck
+        run: npx tsc --noEmit -p tsconfig.app.json
+      - run: npm run build -- --configuration production
+      - name: Check production artifact
+        run: node scripts/check-artifact.mjs dist/azzu-public-web/browser
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: angular-${{ github.sha }}
+          path: dist/azzu-public-web/browser
+          if-no-files-found: error
+          retention-days: 7
+
+  deploy:
+    name: Publish and verify SWA DEV
+    needs: ci
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: dev
+      url: ${{ vars.SWA_URL }}
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: angular-${{ github.sha }}
+          path: site
+      - uses: Azure/login@8216e11d8cd9b42fe925c852af8e76311ff067ac # v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Retrieve and mask SWA deployment token
+        id: swa
+        shell: bash
+        env:
+          SWA_NAME: ${{ vars.SWA_NAME }}
+          RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+        run: |
+          set -euo pipefail
+          token="$(az staticwebapp secrets list --name "$SWA_NAME" --resource-group "$RESOURCE_GROUP" --query properties.apiKey -o tsv)"
+          test -n "$token"
+          echo "::add-mask::$token"
+          echo "token=$token" >> "$GITHUB_OUTPUT"
+      - name: Publish validated artifact
+        uses: Azure/static-web-apps-deploy@1a947af9992250f3bc2e68ad0754c0b0c11566c9 # v1
+        with:
+          azure_static_web_apps_api_token: ${{ steps.swa.outputs.token }}
+          action: upload
+          app_location: site
+          api_location: ''
+          output_location: ''
+          skip_app_build: true
+          skip_api_build: true
+          production_branch: main
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.15.0'
+      - name: Verify published commit, assets and SPA routes
+        env:
+          SWA_URL: ${{ vars.SWA_URL }}
+        run: node scripts/smoke-deployment.mjs "$SWA_URL"
