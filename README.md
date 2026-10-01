@@ -1,4 +1,8 @@
-# BancocloudWeb
+# AZZU Public Web
+
+Landing pública Angular, independiente del portal `azzu-banking-web` y del Web BFF.
+
+El pipeline [Angular CI and SWA DEV](https://github.com/iLioh/azzu-public-web/actions) valida los pull requests y publica los pushes de `main` en la Static Web App existente. Consulta [CI/CD](docs/CI-CD.md) para autenticación OIDC, variables, verificaciones y rollback.
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.2.0.
 

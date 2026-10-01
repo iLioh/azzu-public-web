@@ -10,3 +10,10 @@ Actions are pinned to commit SHAs. Dependencies are installed using package-lock
 
 Rollback: revert the application commit on main; the same checks and deployment run again. Rerun a failed workflow only after verifying the failure. Backend deployment, authentication federation and custom domain activation are separate tasks.
 
+## DEV configuration
+
+- Site: `stapp-azzu-public-web-dev`; identity: `id-azzu-public-spa-cicd-dev`.
+- The verified GitHub immutable OIDC subject is `repo:iLioh@108911528/azzu-public-web@1398978766:environment:dev`.
+- The identity has Contributor scoped only to this individual SWA. It has no resource-group/subscription Contributor, RBAC, AKS, BFF or database permissions. Website Contributor does not include staticSites operations in this tenant. An administrator may later replace the assignment with a custom role containing `Microsoft.Web/staticSites/read` and `Microsoft.Web/staticSites/listSecrets/action`.
+- This repository is private. GitHub environment `dev` permits deployments only from main.
+- The landing links to the future banking domain; domain activation and BFF authentication are managed separately from this publishing pipeline.
